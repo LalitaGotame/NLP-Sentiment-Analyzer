@@ -5,50 +5,198 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f0f2f5;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
         }
         .container {
-            width: 400px;
-            margin: 100px auto;
-            padding: 20px;
             background: white;
+            padding: 30px;
             border-radius: 10px;
-            box-shadow: 0px 0px 10px gray;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
             text-align: center;
+            margin-bottom: 30px;
         }
         textarea {
             width: 100%;
-            height: 100px;
-            padding: 10px;
+            height: 120px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
         }
         button {
             width: 100%;
-            padding: 10px;
+            padding: 15px;
             background: #4CAF50;
             color: white;
             border: none;
-            margin-top: 10px;
-            font-size: 16px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
             cursor: pointer;
+            margin-bottom: 20px;
+            transition: background 0.3s;
         }
-        h3 {
-            margin-top: 20px;
+        button:hover {
+            background: #45a049;
+        }
+        #result {
+            width: 100%;
+            height: 120px;
+            padding: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .positive {
+            color: #2E7D32;
+            background: #E8F5E9;
+            border: 3px solid #4CAF50;
+        }
+        .negative {
+            color: #C62828;
+            background: #FFEBEE;
+            border: 3px solid #F44336;
+        }
+        .neutral {
+            color: #EF6C00;
+            background: #FFF3E0;
+            border: 3px solid #FF9800;
+        }
+        .analyzing {
+            color: #666;
+            background: #f8f9fa;
+            border: 2px dashed #ccc;
+            font-size: 20px;
+        }
+        .examples {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .examples h3 {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .example-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .example-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px;
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 14px;
+            color: #1565c0;
+        }
+        .example-btn:hover {
+            background: #bbdefb;
         }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <h2>Sentiment Analysis</h2>
-    <form method="POST">
-        <textarea name="text" placeholder="Enter your opinion here..." required></textarea>
-        <button type="submit">Analyze</button>
-    </form>
-
-    {% if sentiment %}
-        <h3>Result: {{ sentiment }}</h3>
-    {% endif %}
-</div>
-
+    <div class="container">
+        <h2>🎭 Sentiment Analyzer</h2>
+        
+        <!-- BOX 1: Input -->
+        <textarea id="inputText" placeholder="Type your opinion here...">This is bad</textarea>
+        
+        <!-- BOX 2: Analyze Button -->
+        <button onclick="analyzeSentiment()">🔍 ANALYZE SENTIMENT</button>
+        
+        <!-- BOX 3: Output -->
+        <div id="result">Result will appear here</div>
+        
+        <div class="examples">
+            <h3>Try these examples:</h3>
+            <div class="example-buttons">
+                <div class="example-btn" onclick="setExample('This is bad')">This is bad</div>
+                <div class="example-btn" onclick="setExample('I love this!')">I love this!</div>
+                <div class="example-btn" onclick="setExample('It\'s okay')">It's okay</div>
+                <div class="example-btn" onclick="setExample('Terrible quality')">Terrible quality</div>
+                <div class="example-btn" onclick="setExample('Excellent service')">Excellent service</div>
+                <div class="example-btn" onclick="setExample('Not good at all')">Not good at all</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function setExample(text) {
+            document.getElementById('inputText').value = text;
+            analyzeSentiment();
+        }
+        
+        async function analyzeSentiment() {
+            const text = document.getElementById('inputText').value;
+            const resultBox = document.getElementById('result');
+            
+            if (!text.trim()) {
+                resultBox.textContent = "Please enter some text";
+                resultBox.className = "";
+                return;
+            }
+            
+            resultBox.textContent = "Analyzing...";
+            resultBox.className = "analyzing";
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({text: text})
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    resultBox.textContent = "Error: " + data.error;
+                    resultBox.className = "";
+                } else {
+                    resultBox.textContent = data.sentiment.toUpperCase();
+                    resultBox.className = data.sentiment;
+                }
+            } catch (error) {
+                resultBox.textContent = "Server error. Try again.";
+                resultBox.className = "";
+            }
+        }
+        
+        // Press Enter to analyze (Shift+Enter for new line)
+        document.getElementById('inputText').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                analyzeSentiment();
+            }
+        });
+        
+        // Auto-analyze on page load
+        window.onload = function() {
+            setTimeout(analyzeSentiment, 100);
+        };
+    </script>
 </body>
 </html>
